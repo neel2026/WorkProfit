@@ -1,12 +1,50 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db
 from models.user import User, UserRole, Department
 from schemas.user import UserRegister, UserLogin, Token, UserResponse
-from core.security import hash_password, verify_password, create_access_token
+from core.security import hash_password, verify_password, create_access_token, decode_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+security = HTTPBearer()
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """Get the current authenticated user from the JWT token."""
+    token = credentials.credentials
+    payload = decode_token(token)
+    
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    email: str = payload.get("sub")
+    if email is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return user
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
@@ -62,3 +100,8 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Get the current authenticated user's information."""
+    return current_user

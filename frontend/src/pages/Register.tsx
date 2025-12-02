@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export default function Register() {
@@ -43,82 +43,72 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background-light font-display px-4 py-12">
-            <div className="max-w-2xl w-full">
-                <div className="bg-white rounded-xl shadow-lg p-8 border border-slate-200">
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center mb-4">
-                            <span className="material-symbols-outlined text-primary text-5xl">data_usage</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900">Create Account</h2>
-                        <p className="text-slate-500 mt-2 text-sm">Join ProjectFlow today</p>
-                    </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+            <div className="max-w-md w-full space-y-8">
+                <div className="text-center">
+                    <h2 className="text-4xl font-black text-gray-900 dark:text-white">Workprofit</h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Create your account</p>
+                </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mb-6 p-4 bg-status-red/10 border border-status-red/20 rounded-lg flex items-center gap-3">
-                            <span className="material-symbols-outlined text-status-red text-xl">error</span>
-                            <p className="text-status-red text-sm font-medium">{error}</p>
-                        </div>
-                    )}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
+                                {error}
+                            </div>
+                        )}
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Name Fields */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="first_name" className="block text-sm font-bold text-slate-700 mb-1.5">
+                                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     First Name
                                 </label>
                                 <input
                                     id="first_name"
                                     name="first_name"
                                     type="text"
+                                    required
                                     value={formData.first_name}
                                     onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                     placeholder="John"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="last_name" className="block text-sm font-bold text-slate-700 mb-1.5">
+                                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Last Name
                                 </label>
                                 <input
                                     id="last_name"
                                     name="last_name"
                                     type="text"
+                                    required
                                     value={formData.last_name}
                                     onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                     placeholder="Doe"
                                 />
                             </div>
                         </div>
 
-                        {/* Email */}
                         <div>
-                            <label htmlFor="email" className="block text-sm font-bold text-slate-700 mb-1.5">
-                                Email Address
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Email address
                             </label>
                             <input
                                 id="email"
                                 name="email"
                                 type="email"
+                                required
                                 value={formData.email}
                                 onChange={handleChange}
-                                required
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                 placeholder="you@example.com"
                             />
                         </div>
 
-                        {/* Phone */}
                         <div>
-                            <label htmlFor="phone_number" className="block text-sm font-bold text-slate-700 mb-1.5">
+                            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Phone Number (Optional)
                             </label>
                             <input
@@ -127,49 +117,46 @@ export default function Register() {
                                 type="tel"
                                 value={formData.phone_number}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                 placeholder="+1 (555) 000-0000"
                             />
                         </div>
 
-                        {/* Password Fields */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-bold text-slate-700 mb-1.5">
-                                    Password
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="confirmPassword" className="block text-sm font-bold text-slate-700 mb-1.5">
-                                    Confirm Password
-                                </label>
-                                <input
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 placeholder-slate-400"
-                                    placeholder="••••••••"
-                                />
-                            </div>
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                value={formData.password}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="••••••••"
+                            />
                         </div>
 
-                        {/* Role and Department */}
+                        <div>
+                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Confirm Password
+                            </label>
+                            <input
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                type="password"
+                                required
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="••••••••"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="role" className="block text-sm font-bold text-slate-700 mb-1.5">
+                                <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Role
                                 </label>
                                 <select
@@ -177,7 +164,7 @@ export default function Register() {
                                     name="role"
                                     value={formData.role}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                 >
                                     <option value="STAFF">Staff</option>
                                     <option value="TEAM_LEAD">Team Lead</option>
@@ -187,7 +174,7 @@ export default function Register() {
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="department" className="block text-sm font-bold text-slate-700 mb-1.5">
+                                <label htmlFor="department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Department
                                 </label>
                                 <select
@@ -195,7 +182,7 @@ export default function Register() {
                                     name="department"
                                     value={formData.department}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                 >
                                     <option value="DEVELOPER">Developer</option>
                                     <option value="QA">QA</option>
@@ -211,33 +198,19 @@ export default function Register() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-primary text-white py-2.5 px-4 rounded-lg font-bold hover:bg-blue-600 focus:ring-4 focus:ring-primary/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isLoading ? (
-                                <>
-                                    <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
-                                    Creating Account...
-                                </>
-                            ) : (
-                                'Create Account'
-                            )}
+                            {isLoading ? 'Creating account...' : 'Create account'}
                         </button>
-                    </form>
 
-                    {/* Footer */}
-                    <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                        <p className="text-slate-500 text-sm">
-                            Already have an account?{' '}
-                            <a href="/login" className="text-primary font-bold hover:text-blue-700">
+                        <div className="text-center text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Already have an account? </span>
+                            <Link to="/login" className="font-medium text-primary hover:text-primary-dark">
                                 Sign in
-                            </a>
-                        </p>
-                    </div>
+                            </Link>
+                        </div>
+                    </form>
                 </div>
-
-                <p className="text-center text-slate-400 text-xs mt-8">
-                    &copy; 2024 ProjectFlow. All rights reserved.
-                </p>
             </div>
         </div>
     );
