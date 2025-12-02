@@ -1,0 +1,58 @@
+# General
+.DS_Store
+Thumbs.db
+*.log
+
+# Project Documentation & Reference (Local only)
+
+
+
+
+
+# Environment / secrets
+.env
+.env.*
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Python (Backend)
+backend/venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/.pytest_cache/
+backend/.coverage
+backend/.mypy_cache/
+backend/coverage.xml
+backend/htmlcov/
+backend/alembic.ini
+!backend/alembic.ini.example
+# SQLite / local DBs
+backend/*.sqlite*
+backend/*.db
+
+# Node/React (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.eslintcache
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/coverage/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+test_results_*.json
+test_pipeline_report.json
+backend/test_results_step*.json
+
+# Reference project (not part of deployable app)
+Workprofit/
+admin/

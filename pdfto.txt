@@ -1,0 +1,58 @@
+✅ Complete Workflow of WorkProfit (SaaS Project Cost & Productivity Platform)
+
+1. 🏢 Company Onboarding (Multi-Tenant)
+- Each company creates its own account.
+- Admin user sets up company profile: working days/hours, base currency, time zone, logo (optional white-labeling).
+- Admin invites Managers and Employees with specific roles.
+
+2. 🏗️ Project Creation (Admin Only)
+- Admin adds a new project: project title, client (optional), budget estimate, project start and end date, visibility setting (private/public to team).
+- Project starts in Draft status.
+
+3. 👨‍💼 Project Assignment to Manager
+- Admin assigns the project to a Manager.
+- Manager adds task breakdown (milestones/sub-tasks), estimated time for each task, start and end dates for each task.
+- Manager submits for Admin approval.
+
+4. ✅ Project Estimation Approval
+- Admin reviews task estimates and descriptions, project timelines.
+- If satisfied, Admin changes status to Approved, making it active for tracking.
+
+5. 👥 Task Assignment to Employees
+- Manager assigns approved tasks to employees.
+- Each task includes: task title & description, type (Feature, Bug Fix, Client Call, Research, Meeting, etc.), estimated hours, start/end dates, priority level (High/Medium/Low).
+- Employees get notified upon assignment and can only see tasks assigned to them.
+- Task status options: Open → In Progress → Blocked/Completed.
+- Manager can reassign task, extend deadline, mark as verified after completion.
+
+6. ⏱️ Employee Work Logging
+- Employees log work: task name, hours spent, task type, notes, work date.
+- Timesheets locked after a configurable time (e.g., 3 days).
+- Only assigned tasks are visible to the employee.
+
+7. 💰 Salary & Hourly Cost Engine
+- Admin sets monthly salary per employee.
+- System auto-calculates: cost per day = salary ÷ working days; cost per hour = cost per day ÷ working hours.
+- Example: ₹30,000/month → ₹1,500/day → ₹187.5/hour.
+
+8. 📊 Project Cost Calculation
+- Actual cost of project = sum of (hours logged × hourly cost) of all employees.
+- Comparison: estimated vs. actual time; estimated vs. actual cost; billing vs. profitability (if billing data provided).
+
+9. 👨‍💼 Employee Productivity & Profitability
+- Each employee’s productivity is tracked: total hours logged; contribution to billable vs. non-billable work; hourly cost vs. value generated.
+- Status: 🟢 Profitable / 🔴 Non-profitable.
+
+10. 📈 Reports & Insights
+- Admin/Manager dashboards: project overview (budget vs. cost, profit/loss); employee overview (productivity %, profitability index).
+- Export reports as CSV/XLS.
+- Charts: time utilization, cost overruns, bottlenecks.
+
+11. 🔔 Notifications & Alerts
+- Pending approvals for project/tasks.
+- Employee inactivity (not logging hours).
+- Overdue tasks or nearing deadline.
+- Monthly email summary to Admin/Managers.
+
+12. 📦 Optional Add-ons (Future Scope)
+- Client billing and invoice module; leave management system; payroll & HRMS integration; multi-currency & timezone support; Power BI / Data Studio integration; Slack/MS Teams notifications; white-labeling for agencies/resellers; auto email alerts for profitability; heatmaps for employee utilization; task templates and duplication; KPI/SLA dashboards; payment gateway integration.
