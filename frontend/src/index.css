@@ -15,13 +15,26 @@
   --radius-xl: 0.75rem;
 }
 
+/* Force class-based dark mode in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   background-color: var(--color-background-light);
+
+  /* FORCE Light mode by default for browser UI (scrollbars, etc) */
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Dark mode styles applied only when .dark class is present */
+.dark {
+  background-color: var(--color-background-dark);
+  /* Switch browser UI to dark only when class is present */
+  color-scheme: dark;
 }

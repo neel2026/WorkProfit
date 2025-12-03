@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 
 interface LayoutProps {
@@ -7,6 +7,56 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isDark, setIsDark] = useState(false);
+    const [isThemeInitialized, setIsThemeInitialized] = useState(false);
+
+    // Initialize theme from localStorage ONCE on mount
+    useEffect(() => {
+        // Get stored preference or default to light
+        const storedTheme = localStorage.getItem('theme');
+        const prefersDark = storedTheme === 'dark';
+
+        // Set state
+        setIsDark(prefersDark);
+
+        // Apply to DOM - REMOVE any existing dark class first, then add if needed
+        document.documentElement.classList.remove('dark');
+        if (prefersDark) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Mark theme as initialized
+        setIsThemeInitialized(true);
+
+        // If no stored preference, save 'light' as default
+        if (!storedTheme) {
+            localStorage.setItem('theme', 'light');
+        }
+    }, []); // Empty dependency array - runs ONCE on mount
+
+    const toggleTheme = () => {
+        console.log('Toggle theme clicked. Current state:', isDark);
+        const nextTheme = !isDark;
+
+        // Update state
+        setIsDark(nextTheme);
+
+        // Update DOM - REMOVE existing class first, then add if needed
+        console.log('Updating DOM class list...');
+        document.documentElement.classList.remove('dark');
+        if (nextTheme) {
+            document.documentElement.classList.add('dark');
+        }
+        console.log('New class list:', document.documentElement.classList.toString());
+
+        // Persist to localStorage
+        localStorage.setItem('theme', nextTheme ? 'dark' : 'light');
+    };
+
+    // Don't render until theme is initialized to prevent flash
+    if (!isThemeInitialized) {
+        return null;
+    }
 
     return (
         <div className="flex h-screen w-screen overflow-hidden font-display bg-gray-50 dark:bg-gray-900">
@@ -44,10 +94,18 @@ export default function Layout({ children }: LayoutProps) {
                         <h2 className="text-lg font-bold text-gray-800 dark:text-white">Workprofit</h2>
                     </div>
 
-                    {/* Desktop Header Space */}
-                    <div className="hidden md:flex items-center gap-4">
-                        {/* Add user menu, notifications etc here */}
-                    </div>
+                    {/* Theme Toggle Button - Works on ALL screen sizes */}
+                    <button
+                        onClick={toggleTheme}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                        title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    >
+                        <span className="material-symbols-outlined text-base">
+                            {isDark ? 'dark_mode' : 'light_mode'}
+                        </span>
+                        <span className="hidden sm:inline">{isDark ? 'Dark' : 'Light'}</span>
+                    </button>
                 </header>
 
                 {/* Page Content - Full Width, scrollable */}
