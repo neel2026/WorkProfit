@@ -1,5 +1,5 @@
 import { useAuthStore } from '../store/authStore';
-import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 export default function Dashboard() {
     const { user } = useAuthStore();
@@ -27,10 +27,8 @@ export default function Dashboard() {
     ];
 
     return (
-        <div className="flex flex-row min-h-screen bg-background-light font-display">
-            <Sidebar />
-
-            <main className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 gap-4 sm:gap-6 overflow-y-auto w-full">
+        <Layout>
+            <div className="flex flex-col gap-4 sm:gap-6 w-full">
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-black text-gray-900 dark:text-white">Dashboard</h1>
@@ -109,7 +107,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </Layout>
     );
 }

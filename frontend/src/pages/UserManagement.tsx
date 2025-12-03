@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../services/api';
-import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 interface User {
     id: number;
@@ -316,10 +316,8 @@ export default function UserManagement() {
     }
 
     return (
-        <div className="flex flex-row min-h-screen bg-background-light font-display">
-            <Sidebar />
-
-            <main className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 gap-4 sm:gap-6 w-full overflow-x-hidden">
+        <Layout>
+            <div className="flex flex-col gap-4 sm:gap-6 w-full">
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white">Users</h1>
                     <button
@@ -387,7 +385,7 @@ export default function UserManagement() {
                         </tbody>
                     </table>
                 </div>
-            </main>
+            </div>
 
             <UserModal
                 isOpen={isModalOpen}
@@ -396,6 +394,6 @@ export default function UserManagement() {
                 onSubmit={handleSubmit}
                 isLoading={isSaving}
             />
-        </div>
+        </Layout>
     );
 }

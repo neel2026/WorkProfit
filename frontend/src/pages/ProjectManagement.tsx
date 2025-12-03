@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../services/api';
-import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 interface Project {
     id: number;
@@ -134,10 +134,8 @@ export default function ProjectManagement() {
     if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
     return (
-        <div className="flex flex-row min-h-screen bg-background-light font-display">
-            <Sidebar />
-
-            <main className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 gap-4 sm:gap-6 w-full overflow-x-hidden">
+        <Layout>
+            <div className="flex flex-col gap-4 sm:gap-6 w-full">
                 <div className="flex flex-wrap justify-between items-center gap-3">
                     <h1 className="text-gray-900 dark:text-white text-3xl font-black leading-tight tracking-tight">Projects</h1>
                     <button
@@ -210,7 +208,7 @@ export default function ProjectManagement() {
                         </tbody>
                     </table>
                 </div>
-            </main>
+            </div>
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -300,6 +298,6 @@ export default function ProjectManagement() {
                     </div>
                 </div>
             )}
-        </div>
+        </Layout>
     );
 }

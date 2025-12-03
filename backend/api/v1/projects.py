@@ -10,6 +10,15 @@ from api.v1.users import get_current_user
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
+
+def ensure_project_privileges(current_user: User):
+    """Allow only Admins and Project Managers to manage projects."""
+    if current_user.role not in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to manage projects",
+        )
+
 async def validate_team_lead(user_id: int, db: AsyncSession):
     """
     Scenario 5: Validate that team_lead has role TEAM_LEAD or STAFF.
@@ -51,6 +60,7 @@ async def create_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new project with role validation."""
+    ensure_project_privileges(current_user)
     
     # Validate team lead role if provided
     if project_data.team_lead_id:
@@ -77,12 +87,13 @@ async def create_project(
     
     # Add members if provided
     if project_data.member_ids:
-        for user_id in project_data.member_ids:
-            # Verify user exists
-            result = await db.execute(select(User).where(User.id == user_id))
-            user = result.scalar_one_or_none()
-            if user:
-                project.members.append(user)
+        unique_member_ids = list(dict.fromkeys(project_data.member_ids))
+        result = await db.execute(select(User).where(User.id.in_(unique_member_ids)))
+        members = result.scalars().all()
+        if len(members) != len(unique_member_ids):
+            missing = set(unique_member_ids) - {m.id for m in members}
+            raise HTTPException(status_code=404, detail=f"Member(s) not found: {missing}")
+        project.members.extend(members)
         await db.commit()
         await db.refresh(project)
     
@@ -151,6 +162,7 @@ async def update_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a project."""
+    ensure_project_privileges(current_user)
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     
@@ -165,23 +177,31 @@ async def update_project(
     if project_update.client_id:
         await validate_client(project_update.client_id, db)
     
-    # Update fields
+    # Update fields with timeline safety if only one date provided
     update_data = project_update.model_dump(exclude_unset=True)
     member_ids = update_data.pop('member_ids', None)
-    
+
+    new_start = update_data.get("start_date", project.start_date)
+    new_end = update_data.get("end_date", project.end_date)
+    if new_end <= new_start:
+        raise HTTPException(
+            status_code=400,
+            detail=f"End date ({new_end}) must be after start date ({new_start})."
+        )
+
     for key, value in update_data.items():
         setattr(project, key, value)
     
     # Update members if provided
     if member_ids is not None:
-        # Clear existing members
+        unique_member_ids = list(dict.fromkeys(member_ids))
+        result = await db.execute(select(User).where(User.id.in_(unique_member_ids)))
+        members = result.scalars().all()
+        if len(members) != len(unique_member_ids):
+            missing = set(unique_member_ids) - {m.id for m in members}
+            raise HTTPException(status_code=404, detail=f"Member(s) not found: {missing}")
         project.members.clear()
-        # Add new members
-        for user_id in member_ids:
-            result = await db.execute(select(User).where(User.id == user_id))
-            user = result.scalar_one_or_none()
-            if user:
-                project.members.append(user)
+        project.members.extend(members)
     
     await db.commit()
     await db.refresh(project)
@@ -199,6 +219,7 @@ async def delete_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a project."""
+    ensure_project_privileges(current_user)
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     
