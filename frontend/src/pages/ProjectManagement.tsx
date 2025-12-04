@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../services/api';
 import Layout from '../components/Layout';
+import { useAuthStore } from '../store/authStore';
 
 interface Project {
     id: number;
@@ -30,10 +31,14 @@ interface ProjectFormData {
 }
 
 export default function ProjectManagement() {
+    console.log('ProjectManagement component mounting...');
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+    const { user } = useAuthStore();
+    const isAuthorized = user?.role === 'ADMIN' || user?.role === 'PROJECT_MANAGER';
 
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
@@ -62,6 +67,10 @@ export default function ProjectManagement() {
     };
 
     const handleCreateProject = () => {
+        if (!isAuthorized) {
+            alert('You do not have permission to create projects.');
+            return;
+        }
         setEditingProject(null);
         setFormData({
             name: '',
@@ -77,6 +86,10 @@ export default function ProjectManagement() {
     };
 
     const handleEditProject = (project: Project) => {
+        if (!isAuthorized) {
+            alert('You do not have permission to edit projects.');
+            return;
+        }
         setEditingProject(project);
         setFormData({
             name: project.name,
@@ -93,26 +106,54 @@ export default function ProjectManagement() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('handleSubmit called', formData);
+
+        // Frontend Validation: End Date must be after Start Date
+        const start = new Date(formData.start_date);
+        const end = new Date(formData.end_date);
+        console.log('Date validation:', { start, end, isValid: end > start });
+
+        if (end <= start) {
+            console.warn('Validation failed: End date before start date');
+            alert('End date must be after the start date.');
+            return;
+        }
+
+        if (!isAuthorized && editingProject) {
+            alert('You do not have permission to edit projects.');
+            return;
+        }
+
         try {
+            console.log('Sending request...', editingProject ? 'PATCH' : 'POST');
             if (editingProject) {
                 await apiClient.patch(`/projects/${editingProject.id}`, formData);
             } else {
                 await apiClient.post('/projects/', formData);
             }
+            console.log('Request successful');
             setShowModal(false);
             fetchProjects();
         } catch (err: any) {
-            alert(err.response?.data?.detail || 'Failed to save project');
+            console.error('Project save error:', err);
+            const errorMessage = err.response?.data?.detail || 'Failed to save project. Please check your input and try again.';
+            alert(errorMessage);
         }
     };
 
     const handleDeleteProject = async (projectId: number) => {
-        if (!confirm('Are you sure you want to delete this project?')) return;
+        if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+            return;
+        }
         try {
+            console.log('Sending DELETE request...');
             await apiClient.delete(`/projects/${projectId}`);
+            console.log('Delete successful');
             fetchProjects();
-        } catch (err) {
-            alert('Failed to delete project');
+        } catch (err: any) {
+            console.error('Delete error:', err);
+            const errorMessage = err.response?.data?.detail || 'Failed to delete project. You may not have permission.';
+            alert(errorMessage);
         }
     };
 
@@ -195,12 +236,16 @@ export default function ProjectManagement() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2">
-                                            <button onClick={() => handleEditProject(project)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                                                <span className="material-symbols-outlined">edit</span>
-                                            </button>
-                                            <button onClick={() => handleDeleteProject(project.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                                                <span className="material-symbols-outlined">delete</span>
-                                            </button>
+                                            {isAuthorized && (
+                                                <>
+                                                    <button onClick={() => handleEditProject(project)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                                        <span className="material-symbols-outlined">edit</span>
+                                                    </button>
+                                                    <button onClick={() => setPendingDeleteId(project.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                                        <span className="material-symbols-outlined">delete</span>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -209,6 +254,37 @@ export default function ProjectManagement() {
                     </table>
                 </div>
             </div>
+
+            {pendingDeleteId !== null && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Project</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                            Are you sure you want to delete this project? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setPendingDeleteId(null)}
+                                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const idToDelete = pendingDeleteId;
+                                    setPendingDeleteId(null);
+                                    if (idToDelete !== null) {
+                                        await handleDeleteProject(idToDelete);
+                                    }
+                                }}
+                                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">

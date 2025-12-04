@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import List
 from database import get_db
 from models.project import Project, project_members
@@ -163,7 +164,13 @@ async def update_project(
 ):
     """Update a project."""
     ensure_project_privileges(current_user)
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    
+    # FIX: Eager load members to prevent MissingGreenlet error
+    result = await db.execute(
+        select(Project)
+        .options(selectinload(Project.members))
+        .where(Project.id == project_id)
+    )
     project = result.scalar_one_or_none()
     
     if not project:

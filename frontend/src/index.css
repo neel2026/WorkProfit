@@ -16,14 +16,14 @@
 }
 
 /* Force class-based dark mode in Tailwind v4 */
-@custom-variant dark (&:where(.dark, .dark *));
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   background-color: var(--color-background-light);
 
   /* FORCE Light mode by default for browser UI (scrollbars, etc) */
-  color-scheme: light;
+  color-scheme: light !important;
 }
 
 body {

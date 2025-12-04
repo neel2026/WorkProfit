@@ -58,10 +58,20 @@ export const useAuthStore = create<AuthState>()(
                     // Store token
                     localStorage.setItem('token', access_token);
 
-                    // For now, we'll decode the user info from the token or make another API call
-                    // Simplified: just set authenticated state
+                    // Fetch current user info
+                    let me: User | null = null;
+                    try {
+                        const meResp = await apiClient.get('/auth/me', {
+                            headers: { Authorization: `Bearer ${access_token}` },
+                        });
+                        me = meResp.data as User;
+                    } catch (meErr) {
+                        console.warn('Failed to fetch current user', meErr);
+                    }
+
                     set({
                         token: access_token,
+                        user: me,
                         isAuthenticated: true,
                         isLoading: false,
                         error: null,
