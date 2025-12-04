@@ -101,8 +101,8 @@ export default function TaskBoard() {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6 w-full h-full">
-                <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-6 w-full flex-1 overflow-hidden">
+                <div className="flex justify-between items-center flex-shrink-0">
                     <div>
                         <button onClick={() => navigate('/projects')} className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-2 flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">arrow_back</span> Back to Projects
@@ -118,19 +118,20 @@ export default function TaskBoard() {
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full overflow-x-auto pb-4">
+
+                <div className="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6">
                     {columns.map(status => (
-                        <div key={status} className="flex flex-col gap-4 min-w-[280px]">
-                            <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <div key={status} className="flex flex-col gap-4 min-w-[280px] flex-shrink-0 w-full md:w-[calc(25%-18px)]">
+                            <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0">
                                 <h3 className="font-bold text-gray-700 dark:text-gray-200">{status.replace('_', ' ')}</h3>
                                 <span className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded text-xs font-medium text-gray-500 dark:text-gray-400">
                                     {tasks.filter(t => t.status === status).length}
                                 </span>
                             </div>
 
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)]">
                                 {tasks.filter(t => t.status === status).map(task => (
-                                    <div key={task.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow group">
+                                    <div key={task.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow group flex-shrink-0">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${getPriorityColor(task.priority)}`}>
                                                 {task.priority}
