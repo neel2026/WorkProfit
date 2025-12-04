@@ -37,8 +37,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive(item.path)
-                                    ? 'bg-primary/10 dark:bg-primary/20 text-primary'
-                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                                 }`}
                         >
                             <span className="material-symbols-outlined">{item.icon}</span>

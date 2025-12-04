@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import ProjectManagement from './pages/ProjectManagement';
+import TaskBoard from './pages/TaskBoard';
+import TasksPage from './pages/TasksPage';
 import './App.css';
 
 // Protected Route Component
@@ -45,6 +47,22 @@ function App() {
           element={
             <ProtectedRoute>
               <ProjectManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:projectId/tasks"
+          element={
+            <ProtectedRoute>
+              <TaskBoard />
             </ProtectedRoute>
           }
         />

@@ -123,15 +123,24 @@ async def list_projects(
     db: AsyncSession = Depends(get_db)
 ):
     """List all projects."""
+    from models.task import Task  # Import here to avoid circular imports
+    
     result = await db.execute(select(Project).offset(skip).limit(limit))
     projects = result.scalars().all()
     
     # Add computed properties to each project
     project_responses = []
     for project in projects:
+        # Count tasks for this project
+        task_count_result = await db.execute(
+            select(Task).where(Task.project_id == project.id)
+        )
+        task_count = len(task_count_result.scalars().all())
+        
         response = ProjectResponse.model_validate(project)
         response.progress_percentage = project.progress_percentage
         response.duration_days = project.duration_days
+        response.task_count = task_count
         project_responses.append(response)
     
     return project_responses

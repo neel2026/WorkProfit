@@ -15,6 +15,7 @@ from alembic import context
 from database import Base
 from models.user import User  # Import models to register them
 from models.project import Project
+from models.task import Task
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

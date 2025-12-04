@@ -60,13 +60,7 @@ export default function Layout({ children }: LayoutProps) {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden font-display bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-            {/* DEBUG OVERLAY - REMOVE BEFORE PRODUCTION */}
-            <div className="fixed bottom-4 right-4 z-[9999] bg-black/80 text-white p-4 rounded text-xs font-mono pointer-events-none opacity-50 hover:opacity-100">
-                <div>State isDark: {isDark.toString()}</div>
-                <div>DOM has .dark: {document.documentElement.classList.contains('dark').toString()}</div>
-                <div>System Dark: {window.matchMedia('(prefers-color-scheme: dark)').matches.toString()}</div>
-                <div>Window Size: {window.innerWidth}x{window.innerHeight}</div>
-            </div>
+
 
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (

@@ -48,6 +48,9 @@ class Project(Base):
         secondary=project_members,
         backref="member_projects"
     )
+
+    # One-to-many relationship with Tasks
+    tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     
     @property
     def progress_percentage(self) -> float:

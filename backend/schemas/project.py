@@ -62,6 +62,7 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     progress_percentage: float | None = None  # Computed property
     duration_days: int | None = None  # Computed property
+    task_count: int | None = None  # Number of tasks
     
     class Config:
         from_attributes = True

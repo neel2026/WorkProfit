@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/api';
 import Layout from '../components/Layout';
 import { useAuthStore } from '../store/authStore';
@@ -38,6 +39,7 @@ export default function ProjectManagement() {
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
     const { user } = useAuthStore();
+    const navigate = useNavigate();
     const isAuthorized = user?.role === 'ADMIN' || user?.role === 'PROJECT_MANAGER';
 
     const [formData, setFormData] = useState<ProjectFormData>({
@@ -227,7 +229,7 @@ export default function ProjectManagement() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-sm text-gray-800 dark:text-gray-200">{project._count?.tasks || 0} tasks</span>
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">{project.task_count || 0} tasks</span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status)}`}>
@@ -236,6 +238,9 @@ export default function ProjectManagement() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2">
+                                            <button onClick={() => navigate(`/projects/${project.id}/tasks`)} className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300" title="View Tasks">
+                                                <span className="material-symbols-outlined">list_alt</span>
+                                            </button>
                                             {isAuthorized && (
                                                 <>
                                                     <button onClick={() => handleEditProject(project)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
