@@ -12,6 +12,7 @@ export default function TaskBoard() {
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [draggingId, setDraggingId] = useState<number | null>(null);
     const [formData, setFormData] = useState<TaskCreate>({
         title: '',
         description: '',
@@ -56,6 +57,15 @@ export default function TaskBoard() {
         }
     };
 
+    const getAssignee = (assigneeId?: number | null) => {
+        if (!assigneeId || !project) return null;
+        const candidates = [
+            ...(project.members || []),
+            ...(project.team_lead ? [project.team_lead] : [])
+        ];
+        return candidates.find((u: any) => u.id === assigneeId) || null;
+    };
+
     const handleSubmitTask = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -96,6 +106,24 @@ export default function TaskBoard() {
         }
     };
 
+    const handleDropStatus = async (taskId: number, newStatus: TaskStatus) => {
+        const previous = tasks;
+        // Optimistic update
+        setTasks(prev =>
+            prev.map(t => (t.id === taskId ? { ...t, status: newStatus } : t))
+        );
+        try {
+            await apiClient.patch(`/tasks/${taskId}`, { status: newStatus, project_id: Number(projectId) });
+        } catch (err) {
+            console.error('Failed to move task', err);
+            // revert on failure
+            setTasks(previous);
+            alert('Failed to move task. Please try again.');
+        } finally {
+            setDraggingId(null);
+        }
+    };
+
     const getPriorityColor = (priority: TaskPriority) => {
         switch (priority) {
             case TaskPriority.HIGH: return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
@@ -131,7 +159,16 @@ export default function TaskBoard() {
 
                 <div className="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6">
                     {columns.map(status => (
-                        <div key={status} className="flex flex-col gap-4 min-w-[280px] flex-shrink-0 w-full md:w-[calc(25%-18px)]">
+                        <div
+                            key={status}
+                            className="flex flex-col gap-4 min-w-[280px] flex-shrink-0 w-full md:w-[calc(25%-18px)]"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => {
+                                if (draggingId !== null) {
+                                    handleDropStatus(draggingId, status);
+                                }
+                            }}
+                        >
                             <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0">
                                 <h3 className="font-bold text-gray-700 dark:text-gray-200">{status.replace('_', ' ')}</h3>
                                 <span className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -140,13 +177,26 @@ export default function TaskBoard() {
                             </div>
 
                             <div className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)]">
-                                {tasks.filter(t => t.status === status).map(task => (
-                                    <div key={task.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow group flex-shrink-0">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${getPriorityColor(task.priority)}`}>
-                                                {task.priority}
-                                            </span>
-                                            <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {tasks.filter(t => t.status === status).length === 0 && (
+                                    <div className="text-sm text-center text-gray-400 dark:text-gray-500 py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                                        No tasks here
+                                    </div>
+                                )}
+                                {tasks.filter(t => t.status === status).map(task => {
+                                    const assignee = getAssignee(task.assignee_id);
+                                    const initials = assignee ? `${assignee.first_name[0] ?? ''}${assignee.last_name?.[0] ?? ''}`.trim() : '';
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow group flex-shrink-0"
+                                            draggable
+                                            onDragStart={() => setDraggingId(task.id)}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${getPriorityColor(task.priority)}`}>
+                                                    {task.priority}
+                                                </span>
+                                                <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="material-symbols-outlined text-sm">delete</span>
                                             </button>
                                         </div>
@@ -158,10 +208,15 @@ export default function TaskBoard() {
                                                 <span className="material-symbols-outlined text-sm">calendar_today</span>
                                                 {task.due_date || 'No date'}
                                             </div>
-                                            {task.assignee_id && (
-                                                <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold" title={`Assignee ID: ${task.assignee_id}`}>
-                                                    U{task.assignee_id}
+                                            {assignee ? (
+                                                <div
+                                                    className="size-7 rounded-full bg-primary/15 dark:bg-primary/25 flex items-center justify-center text-primary text-[10px] font-bold"
+                                                    title={`${assignee.first_name} ${assignee.last_name}`}
+                                                >
+                                                    {initials || 'U'}
                                                 </div>
+                                            ) : (
+                                                <span className="text-gray-300 dark:text-gray-600">Unassigned</span>
                                             )}
                                         </div>
                                         <div className="flex justify-end gap-2 mt-3">
@@ -184,8 +239,9 @@ export default function TaskBoard() {
                                                 Edit
                                             </button>
                                         </div>
-                                    </div>
-                                ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
@@ -280,7 +336,7 @@ export default function TaskBoard() {
                                         type="submit"
                                         className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
                                     >
-                                        Create Task
+                                        {editingTask ? 'Save Task' : 'Create Task'}
                                     </button>
                                 </div>
                             </form>
