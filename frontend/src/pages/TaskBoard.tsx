@@ -12,6 +12,7 @@ export default function TaskBoard() {
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [movingTaskId, setMovingTaskId] = useState<number | null>(null);
     const [draggingId, setDraggingId] = useState<number | null>(null);
     const [formData, setFormData] = useState<TaskCreate>({
         title: '',
@@ -112,6 +113,7 @@ export default function TaskBoard() {
         setTasks(prev =>
             prev.map(t => (t.id === taskId ? { ...t, status: newStatus } : t))
         );
+        setMovingTaskId(taskId);
         try {
             await apiClient.patch(`/tasks/${taskId}`, { status: newStatus, project_id: Number(projectId) });
         } catch (err) {
@@ -121,6 +123,7 @@ export default function TaskBoard() {
             alert('Failed to move task. Please try again.');
         } finally {
             setDraggingId(null);
+            setMovingTaskId(null);
         }
     };
 
@@ -155,6 +158,12 @@ export default function TaskBoard() {
                         Add Task
                     </button>
                 </div>
+                {movingTaskId !== null && (
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                        Updating task...
+                    </div>
+                )}
 
 
                 <div className="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6">
@@ -163,7 +172,8 @@ export default function TaskBoard() {
                             key={status}
                             className="flex flex-col gap-4 min-w-[280px] flex-shrink-0 w-full md:w-[calc(25%-18px)]"
                             onDragOver={(e) => e.preventDefault()}
-                            onDrop={() => {
+                            onDrop={(e) => {
+                                e.preventDefault();
                                 if (draggingId !== null) {
                                     handleDropStatus(draggingId, status);
                                 }
@@ -176,10 +186,30 @@ export default function TaskBoard() {
                                 </span>
                             </div>
 
-                            <div className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)]">
+                            <div
+                                className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[320px] pb-4 border border-transparent"
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (draggingId !== null) {
+                                        handleDropStatus(draggingId, status);
+                                    }
+                                }}
+                            >
                                 {tasks.filter(t => t.status === status).length === 0 && (
-                                    <div className="text-sm text-center text-gray-400 dark:text-gray-500 py-6 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-                                        No tasks here
+                                    <div
+                                        className="text-sm text-center text-gray-400 dark:text-gray-500 py-10 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg"
+                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (draggingId !== null) {
+                                                handleDropStatus(draggingId, status);
+                                            }
+                                        }}
+                                    >
+                                        Drop here to move tasks
                                     </div>
                                 )}
                                 {tasks.filter(t => t.status === status).map(task => {
@@ -242,6 +272,20 @@ export default function TaskBoard() {
                                         </div>
                                     );
                                 })}
+                                {tasks.filter(t => t.status === status).length > 0 && (
+                                    <div
+                                        aria-hidden
+                                        className="h-12"
+                                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (draggingId !== null) {
+                                                handleDropStatus(draggingId, status);
+                                            }
+                                        }}
+                                    />
+                                )}
                             </div>
                         </div>
                     ))}

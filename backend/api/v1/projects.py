@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from typing import List
 from database import get_db
@@ -156,15 +156,22 @@ async def list_projects(
 
     projects = result.scalars().all()
     
+    # Bulk task counts to avoid N+1
+    project_ids = [p.id for p in projects]
+    task_counts = {}
+    if project_ids:
+        counts_result = await db.execute(
+            select(Task.project_id, func.count(Task.id))
+            .where(Task.project_id.in_(project_ids))
+            .group_by(Task.project_id)
+        )
+        task_counts = {pid: cnt for pid, cnt in counts_result.all()}
+
     # Add computed properties to each project
     project_responses = []
     for project in projects:
-        # Count tasks for this project
-        task_count_result = await db.execute(
-            select(Task).where(Task.project_id == project.id)
-        )
-        task_count = len(task_count_result.scalars().all())
-        
+        task_count = task_counts.get(project.id, 0)
+
         response = ProjectResponse.model_validate(project)
         response.progress_percentage = project.progress_percentage
         response.duration_days = project.duration_days
