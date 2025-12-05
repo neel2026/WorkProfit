@@ -53,6 +53,12 @@ export default function ProjectManagement() {
     const navigate = useNavigate();
     const isAuthorized = user?.role === 'ADMIN' || user?.role === 'PROJECT_MANAGER';
 
+    const canManageProject = (project: Project | null) => {
+        if (!project || !user) return false;
+        if (isAuthorized) return true;
+        return project.team_lead_id === user.id;
+    };
+
     // Users for dropdowns
     const [clients, setClients] = useState<UserBrief[]>([]);
     const [teamLeads, setTeamLeads] = useState<UserBrief[]>([]);
@@ -177,8 +183,12 @@ export default function ProjectManagement() {
             return;
         }
 
-        if (!isAuthorized && editingProject) {
-            alert('You do not have permission to edit projects.');
+        if (editingProject && !canManageProject(editingProject)) {
+            alert('You do not have permission to edit this project.');
+            return;
+        }
+        if (!editingProject && !isAuthorized) {
+            alert('You do not have permission to create projects.');
             return;
         }
 
@@ -333,7 +343,7 @@ export default function ProjectManagement() {
                                             <button onClick={() => navigate(`/projects/${project.id}/tasks`)} className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300" title="View Tasks">
                                                 <span className="material-symbols-outlined">list_alt</span>
                                             </button>
-                                            {isAuthorized && (
+                                            {canManageProject(project) && (
                                                 <>
                                                     <button onClick={() => handleEditProject(project)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                                                         <span className="material-symbols-outlined">edit</span>

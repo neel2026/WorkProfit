@@ -11,6 +11,7 @@ export default function TaskBoard() {
     const [project, setProject] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [formData, setFormData] = useState<TaskCreate>({
         title: '',
         description: '',
@@ -20,6 +21,19 @@ export default function TaskBoard() {
         project_id: Number(projectId),
         assignee_id: undefined
     });
+
+    const resetForm = () => {
+        setEditingTask(null);
+        setFormData({
+            title: '',
+            description: '',
+            status: TaskStatus.TODO,
+            priority: TaskPriority.MEDIUM,
+            due_date: '',
+            project_id: Number(projectId),
+            assignee_id: undefined
+        });
+    };
 
     useEffect(() => {
         if (projectId) {
@@ -42,7 +56,7 @@ export default function TaskBoard() {
         }
     };
 
-    const handleCreateTask = async (e: React.FormEvent) => {
+    const handleSubmitTask = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validate due date is not in the past
@@ -58,21 +72,17 @@ export default function TaskBoard() {
         }
 
         try {
-            await apiClient.post('/tasks/', { ...formData, project_id: Number(projectId) });
+            if (editingTask) {
+                await apiClient.patch(`/tasks/${editingTask.id}`, { ...formData, project_id: Number(projectId) });
+            } else {
+                await apiClient.post('/tasks/', { ...formData, project_id: Number(projectId) });
+            }
             setShowModal(false);
             fetchProjectAndTasks();
-            setFormData({
-                title: '',
-                description: '',
-                status: TaskStatus.TODO,
-                priority: TaskPriority.MEDIUM,
-                due_date: '',
-                project_id: Number(projectId),
-                assignee_id: undefined
-            });
+            resetForm();
         } catch (err) {
-            console.error('Failed to create task', err);
-            alert('Failed to create task');
+            console.error('Failed to save task', err);
+            alert('Failed to save task');
         }
     };
 
@@ -110,7 +120,7 @@ export default function TaskBoard() {
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white">{project?.name} / Tasks</h1>
                     </div>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => { resetForm(); setShowModal(true); }}
                         className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark flex items-center gap-2"
                     >
                         <span className="material-symbols-outlined">add</span>
@@ -149,10 +159,30 @@ export default function TaskBoard() {
                                                 {task.due_date || 'No date'}
                                             </div>
                                             {task.assignee_id && (
-                                                <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold">
+                                                <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold" title={`Assignee ID: ${task.assignee_id}`}>
                                                     U{task.assignee_id}
                                                 </div>
                                             )}
+                                        </div>
+                                        <div className="flex justify-end gap-2 mt-3">
+                                            <button
+                                                onClick={() => {
+                                                    setEditingTask(task);
+                                                    setFormData({
+                                                        title: task.title,
+                                                        description: task.description || '',
+                                                        status: task.status,
+                                                        priority: task.priority,
+                                                        due_date: task.due_date || '',
+                                                        project_id: Number(projectId),
+                                                        assignee_id: task.assignee_id || undefined,
+                                                    });
+                                                    setShowModal(true);
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                                            >
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -164,8 +194,10 @@ export default function TaskBoard() {
                 {showModal && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full shadow-2xl">
-                            <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Create New Task</h2>
-                            <form onSubmit={handleCreateTask} className="space-y-4">
+                            <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+                                {editingTask ? 'Edit Task' : 'Create New Task'}
+                            </h2>
+                            <form onSubmit={handleSubmitTask} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                                     <input
@@ -184,6 +216,22 @@ export default function TaskBoard() {
                                         className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         rows={3}
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignee</label>
+                                    <select
+                                        value={formData.assignee_id ?? ''}
+                                        onChange={e => setFormData({ ...formData, assignee_id: e.target.value ? Number(e.target.value) : undefined })}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {project?.members?.map((m: any) => (
+                                            <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
+                                        ))}
+                                        {project?.team_lead && (
+                                            <option value={project.team_lead.id}>Lead: {project.team_lead.first_name} {project.team_lead.last_name}</option>
+                                        )}
+                                    </select>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from typing import List
 from database import get_db
@@ -12,13 +12,13 @@ from api.v1.users import get_current_user
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-def ensure_project_privileges(current_user: User):
-    """Allow only Admins and Project Managers to manage projects."""
-    if current_user.role not in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to manage projects",
-        )
+def can_manage_project(project: Project, current_user: User) -> bool:
+    """Admins/PMs can manage any; team leads can manage their own projects."""
+    if current_user.role in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
+        return True
+    if project.team_lead_id == current_user.id:
+        return True
+    return False
 
 async def validate_team_lead(user_id: int, db: AsyncSession):
     """
@@ -61,7 +61,8 @@ async def create_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new project with role validation."""
-    ensure_project_privileges(current_user)
+    if current_user.role not in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
+        raise HTTPException(status_code=403, detail="Not authorized to create projects")
     
     # Validate team lead role if provided
     if project_data.team_lead_id:
@@ -125,17 +126,34 @@ async def list_projects(
     """List all projects with team lead, client, and member details."""
     from models.task import Task  # Import here to avoid circular imports
     from schemas.project import UserBrief
-    
-    # Eager load relationships
-    result = await db.execute(
+
+    base_query = (
         select(Project)
         .options(
             selectinload(Project.team_lead),
             selectinload(Project.client),
             selectinload(Project.members)
         )
-        .offset(skip).limit(limit)
+        .offset(skip)
+        .limit(limit)
     )
+
+    if current_user.role in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
+        result = await db.execute(base_query)
+    else:
+        # Restrict to projects where user is team lead or member
+        result = await db.execute(
+            base_query
+            .outerjoin(project_members, project_members.c.project_id == Project.id)
+            .where(
+                or_(
+                    Project.team_lead_id == current_user.id,
+                    project_members.c.user_id == current_user.id,
+                )
+            )
+            .distinct()
+        )
+
     projects = result.scalars().all()
     
     # Add computed properties to each project
@@ -174,7 +192,7 @@ async def get_project(
     """Get a specific project by ID with full details."""
     from schemas.project import UserBrief
     
-    result = await db.execute(
+    base_query = (
         select(Project)
         .options(
             selectinload(Project.team_lead),
@@ -183,6 +201,20 @@ async def get_project(
         )
         .where(Project.id == project_id)
     )
+    if current_user.role in [UserRole.ADMIN, UserRole.PROJECT_MANAGER]:
+        result = await db.execute(base_query)
+    else:
+        result = await db.execute(
+            base_query
+            .outerjoin(project_members, project_members.c.project_id == Project.id)
+            .where(
+                or_(
+                    Project.team_lead_id == current_user.id,
+                    project_members.c.user_id == current_user.id,
+                )
+            )
+            .distinct()
+        )
     project = result.scalar_one_or_none()
     
     if not project:
@@ -211,8 +243,6 @@ async def update_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Update a project."""
-    ensure_project_privileges(current_user)
-    
     # FIX: Eager load members to prevent MissingGreenlet error
     result = await db.execute(
         select(Project)
@@ -224,6 +254,10 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Authorization: admins/PMs or assigned team lead
+    if not can_manage_project(project, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to update this project")
+
     # Validate team lead role if updating
     if project_update.team_lead_id:
         await validate_team_lead(project_update.team_lead_id, db)
@@ -274,12 +308,13 @@ async def delete_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a project."""
-    ensure_project_privileges(current_user)
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not can_manage_project(project, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this project")
     
     await db.delete(project)
     await db.commit()

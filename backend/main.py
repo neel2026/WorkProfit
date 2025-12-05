@@ -5,6 +5,8 @@ from api.v1.users import router as users_router
 from api.v1.projects import router as projects_router
 from api.v1.tasks import router as tasks_router
 from api.v1.labels import router as labels_router
+from api.v1.statuses import router as statuses_router
+from api.v1.priorities import router as priorities_router
 
 app = FastAPI(title="WorkProfit API", version="1.0.0")
 
@@ -42,6 +44,8 @@ app.include_router(users_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(labels_router, prefix="/api/v1")
+app.include_router(statuses_router, prefix="/api/v1")
+app.include_router(priorities_router, prefix="/api/v1")
 from api.v1.files import router as files_router
 app.include_router(files_router, prefix="/api/v1")
 
