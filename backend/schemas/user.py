@@ -31,6 +31,24 @@ class UserRegister(BaseModel):
         
         return self
 
+    @model_validator(mode='after')
+    def validate_password_strength(self):
+        """
+        Basic password policy: at least 8 chars, with upper, lower, digit, and special.
+        """
+        pwd = self.password or ""
+        if (
+            len(pwd) < 8
+            or not any(c.islower() for c in pwd)
+            or not any(c.isupper() for c in pwd)
+            or not any(c.isdigit() for c in pwd)
+            or not any(c in "!@#$%^&*()-_=+[]{}|;:,.<>?/~`" for c in pwd)
+        ):
+            raise ValueError(
+                "Password must be at least 8 characters and include upper, lower, digit, and special character."
+            )
+        return self
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
