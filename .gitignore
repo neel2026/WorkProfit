@@ -60,3 +60,7 @@ backend/test_results_step*.json
 # Reference project (not part of deployable app)
 Workprofit/
 admin/
+geminisummary.txt
+docs.txt
+docs/gap_analysis.md
+uploads

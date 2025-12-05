@@ -16,6 +16,7 @@ from database import Base
 from models.user import User  # Import models to register them
 from models.project import Project
 from models.task import Task
+from models.label import Label
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

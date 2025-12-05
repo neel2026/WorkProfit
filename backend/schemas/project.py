@@ -1,8 +1,21 @@
 from pydantic import BaseModel, model_validator, field_validator
-from typing import Literal, List
+from typing import Literal, List, Optional
 from datetime import date, datetime
 
 ProjectStatusType = Literal["PLANNING", "IN_PROGRESS", "ON_HOLD", "COMPLETED", "CANCELLED"]
+
+
+class UserBrief(BaseModel):
+    """Brief user info for displaying in project lists."""
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    role: str
+    
+    class Config:
+        from_attributes = True
+
 
 class ProjectCreate(BaseModel):
     name: str
@@ -12,6 +25,7 @@ class ProjectCreate(BaseModel):
     start_date: date
     end_date: date
     status: ProjectStatusType = "PLANNING"
+    document_url: str | None = None
     member_ids: List[int] = []  # List of user IDs to add as members
     
     @model_validator(mode='after')
@@ -27,6 +41,7 @@ class ProjectCreate(BaseModel):
             )
         return self
 
+
 class ProjectUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
@@ -35,6 +50,7 @@ class ProjectUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     status: ProjectStatusType | None = None
+    document_url: str | None = None
     member_ids: List[int] | None = None  # Update member list
     
     @model_validator(mode='after')
@@ -50,6 +66,7 @@ class ProjectUpdate(BaseModel):
                 )
         return self
 
+
 class ProjectResponse(BaseModel):
     id: int
     name: str
@@ -59,17 +76,26 @@ class ProjectResponse(BaseModel):
     start_date: date
     end_date: date
     status: str
+    document_url: str | None
     created_at: datetime
     progress_percentage: float | None = None  # Computed property
     duration_days: int | None = None  # Computed property
+    time_used: int | None = None  # Computed property: Elapsed days
     task_count: int | None = None  # Number of tasks
+    
+    # Expanded user details
+    team_lead: Optional[UserBrief] = None
+    client: Optional[UserBrief] = None
+    members: List[UserBrief] = []
     
     class Config:
         from_attributes = True
 
+
 class ProjectMemberAdd(BaseModel):
     """Schema for adding members to a project."""
     user_ids: List[int]
+
 
 class ProjectMemberRemove(BaseModel):
     """Schema for removing members from a project."""

@@ -4,6 +4,14 @@ import apiClient from '../services/api';
 import Layout from '../components/Layout';
 import { useAuthStore } from '../store/authStore';
 
+interface UserBrief {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    role: string;
+}
+
 interface Project {
     id: number;
     name: string;
@@ -15,9 +23,12 @@ interface Project {
     status: string;
     progress_percentage: number;
     duration_days: number;
-    team_lead?: { name: string };
-    members?: any[];
-    _count?: { tasks: number };
+    task_count: number;
+    team_lead?: UserBrief;
+    client?: UserBrief;
+    members?: UserBrief[];
+    document_url?: string | null;
+    time_used?: number;
 }
 
 interface ProjectFormData {
@@ -29,10 +40,10 @@ interface ProjectFormData {
     end_date: string;
     status: string;
     member_ids: number[];
+    document_url: string | null;
 }
 
 export default function ProjectManagement() {
-    console.log('ProjectManagement component mounting...');
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -42,6 +53,13 @@ export default function ProjectManagement() {
     const navigate = useNavigate();
     const isAuthorized = user?.role === 'ADMIN' || user?.role === 'PROJECT_MANAGER';
 
+    // Users for dropdowns
+    const [clients, setClients] = useState<UserBrief[]>([]);
+    const [teamLeads, setTeamLeads] = useState<UserBrief[]>([]);
+    const [staff, setStaff] = useState<UserBrief[]>([]);
+
+    const [isUploading, setIsUploading] = useState(false);
+
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
         description: '',
@@ -50,11 +68,13 @@ export default function ProjectManagement() {
         start_date: '',
         end_date: '',
         status: 'PLANNING',
-        member_ids: []
+        member_ids: [],
+        document_url: null
     });
 
     useEffect(() => {
         fetchProjects();
+        fetchUsers();
     }, []);
 
     const fetchProjects = async () => {
@@ -65,6 +85,23 @@ export default function ProjectManagement() {
         } catch (err) {
             console.error('Failed to fetch projects');
             setIsLoading(false);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            // Fetch users by role for dropdowns
+            const [clientsRes, teamLeadsRes, staffRes] = await Promise.all([
+                apiClient.get('/users/?role=CLIENT'),
+                apiClient.get('/users/?role=TEAM_LEAD'),
+                apiClient.get('/users/?role=STAFF')
+            ]);
+            setClients(clientsRes.data);
+            setTeamLeads(teamLeadsRes.data);
+            // Combine TEAM_LEAD and STAFF for members dropdown
+            setStaff([...teamLeadsRes.data, ...staffRes.data]);
+        } catch (err) {
+            console.error('Failed to fetch users');
         }
     };
 
@@ -82,7 +119,8 @@ export default function ProjectManagement() {
             start_date: new Date().toISOString().split('T')[0],
             end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             status: 'PLANNING',
-            member_ids: []
+            member_ids: [],
+            document_url: null
         });
         setShowModal(true);
     };
@@ -101,22 +139,40 @@ export default function ProjectManagement() {
             start_date: project.start_date,
             end_date: project.end_date,
             status: project.status,
-            member_ids: []
+            member_ids: project.members?.map(m => m.id) || [],
+            document_url: project.document_url || null
         });
         setShowModal(true);
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+
+        try {
+            const response = await apiClient.post('/files/upload', uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setFormData(prev => ({ ...prev, document_url: response.data.url }));
+        } catch (err) {
+            alert('File upload failed');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('handleSubmit called', formData);
 
         // Frontend Validation: End Date must be after Start Date
         const start = new Date(formData.start_date);
         const end = new Date(formData.end_date);
-        console.log('Date validation:', { start, end, isValid: end > start });
 
         if (end <= start) {
-            console.warn('Validation failed: End date before start date');
             alert('End date must be after the start date.');
             return;
         }
@@ -127,17 +183,14 @@ export default function ProjectManagement() {
         }
 
         try {
-            console.log('Sending request...', editingProject ? 'PATCH' : 'POST');
             if (editingProject) {
                 await apiClient.patch(`/projects/${editingProject.id}`, formData);
             } else {
                 await apiClient.post('/projects/', formData);
             }
-            console.log('Request successful');
             setShowModal(false);
             fetchProjects();
         } catch (err: any) {
-            console.error('Project save error:', err);
             const errorMessage = err.response?.data?.detail || 'Failed to save project. Please check your input and try again.';
             alert(errorMessage);
         }
@@ -148,15 +201,21 @@ export default function ProjectManagement() {
             return;
         }
         try {
-            console.log('Sending DELETE request...');
             await apiClient.delete(`/projects/${projectId}`);
-            console.log('Delete successful');
             fetchProjects();
         } catch (err: any) {
-            console.error('Delete error:', err);
             const errorMessage = err.response?.data?.detail || 'Failed to delete project. You may not have permission.';
             alert(errorMessage);
         }
+    };
+
+    const toggleMember = (userId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            member_ids: prev.member_ids.includes(userId)
+                ? prev.member_ids.filter(id => id !== userId)
+                : [...prev.member_ids, userId]
+        }));
     };
 
     const getStatusClasses = (status: string) => {
@@ -172,6 +231,11 @@ export default function ProjectManagement() {
 
     const formatStatus = (status: string) => {
         return status.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
+    };
+
+    const getUserFullName = (user?: UserBrief) => {
+        if (!user) return 'Unassigned';
+        return `${user.first_name} ${user.last_name}`;
     };
 
     if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
@@ -198,6 +262,7 @@ export default function ProjectManagement() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Team Lead</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Members</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tasks</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Timeline</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -210,26 +275,53 @@ export default function ProjectManagement() {
                                         {project.description && (
                                             <div className="text-sm text-gray-500 dark:text-gray-400">{project.description.substring(0, 50)}{project.description.length > 50 ? '...' : ''}</div>
                                         )}
+                                        {project.document_url && (
+                                            <a href={`http://localhost:8000${project.document_url}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                                                <span className="material-symbols-outlined text-sm">description</span> Document
+                                            </a>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
                                             <div className="size-8 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center text-primary">
                                                 <span className="material-symbols-outlined text-lg">person</span>
                                             </div>
-                                            <span className="text-sm text-gray-800 dark:text-gray-200">{project.team_lead_id ? `User ${project.team_lead_id}` : 'Unassigned'}</span>
+                                            <span className="text-sm text-gray-800 dark:text-gray-200">{getUserFullName(project.team_lead)}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex -space-x-2">
-                                            {[1, 2, 3].map((i) => (
-                                                <div key={i} className="size-8 rounded-full bg-primary/20 dark:bg-primary/30 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center text-primary">
-                                                    <span className="material-symbols-outlined text-sm">person</span>
+                                            {(project.members || []).slice(0, 3).map((member) => (
+                                                <div key={member.id} className="size-8 rounded-full bg-primary/20 dark:bg-primary/30 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center text-primary" title={getUserFullName(member)}>
+                                                    <span className="text-xs font-bold">{member.first_name.charAt(0)}{member.last_name.charAt(0)}</span>
                                                 </div>
                                             ))}
+                                            {(project.members?.length || 0) > 3 && (
+                                                <div className="size-8 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center text-gray-600 dark:text-gray-300">
+                                                    <span className="text-xs font-bold">+{(project.members?.length || 0) - 3}</span>
+                                                </div>
+                                            )}
+                                            {(!project.members || project.members.length === 0) && (
+                                                <span className="text-sm text-gray-400">No members</span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="text-sm text-gray-800 dark:text-gray-200">{project.task_count || 0} tasks</span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="w-full max-w-[140px]">
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-500">{Math.round(project.progress_percentage || 0)}%</span>
+                                                <span className="text-gray-400">{project.time_used || 0}/{project.duration_days || 0}d</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                                                <div
+                                                    className="bg-primary h-1.5 rounded-full"
+                                                    style={{ width: `${Math.min(project.progress_percentage || 0, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status)}`}>
@@ -318,6 +410,88 @@ export default function ProjectManagement() {
                                         className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
                                         rows={3}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Document</label>
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="file"
+                                            onChange={handleFileUpload}
+                                            className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                        />
+                                        {isUploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                                    </div>
+                                    {formData.document_url && (
+                                        <p className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-sm">check_circle</span> Document uploaded
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client</label>
+                                        <select
+                                            value={formData.client_id || ''}
+                                            onChange={(e) => setFormData({ ...formData, client_id: e.target.value ? Number(e.target.value) : null })}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+                                        >
+                                            <option value="">Select Client</option>
+                                            {clients.map(client => (
+                                                <option key={client.id} value={client.id}>
+                                                    {client.first_name} {client.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Team Lead</label>
+                                        <select
+                                            value={formData.team_lead_id || ''}
+                                            onChange={(e) => setFormData({ ...formData, team_lead_id: e.target.value ? Number(e.target.value) : null })}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+                                        >
+                                            <option value="">Select Team Lead</option>
+                                            {teamLeads.map(lead => (
+                                                <option key={lead.id} value={lead.id}>
+                                                    {lead.first_name} {lead.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Members</label>
+                                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 max-h-40 overflow-y-auto bg-white dark:bg-gray-700">
+                                        {staff.length === 0 ? (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">No staff members available</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {staff.map(member => (
+                                                    <label key={member.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-1 rounded">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formData.member_ids.includes(member.id)}
+                                                            onChange={() => toggleMember(member.id)}
+                                                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                                                        />
+                                                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                            {member.first_name} {member.last_name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">({member.role})</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {formData.member_ids.length > 0 && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {formData.member_ids.length} member(s) selected
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

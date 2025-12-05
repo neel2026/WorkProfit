@@ -44,6 +44,7 @@ async def get_current_user(
         )
     return user
 
+
 async def get_current_admin_user(current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
@@ -52,19 +53,33 @@ async def get_current_admin_user(current_user: User = Depends(get_current_user))
         )
     return current_user
 
+
 @router.get("/", response_model=List[UserResponse])
 async def read_users(
     skip: int = 0, 
-    limit: int = 100, 
-    current_user: User = Depends(get_current_admin_user),
+    limit: int = 100,
+    role: str | None = None,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Retrieve users. Only accessible by Admins.
+    Retrieve users. Optionally filter by role.
+    All authenticated users can view user lists (for dropdowns).
     """
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    query = select(User).where(User.is_active == True)
+    
+    # Filter by role if provided
+    if role:
+        try:
+            role_enum = UserRole(role)
+            query = query.where(User.role == role_enum)
+        except ValueError:
+            pass  # Invalid role, ignore filter
+    
+    result = await db.execute(query.offset(skip).limit(limit))
     users = result.scalars().all()
     return users
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def read_user(
@@ -87,6 +102,7 @@ async def read_user(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
@@ -122,6 +138,7 @@ async def create_user(
 
     return new_user
 
+
 @router.patch("/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: int, 
@@ -151,6 +168,7 @@ async def update_user(
     await db.commit()
     await db.refresh(user)
     return user
+
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(

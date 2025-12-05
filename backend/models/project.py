@@ -35,6 +35,7 @@ class Project(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(Enum(ProjectStatus), default=ProjectStatus.PLANNING)
+    document_url = Column(String, nullable=True)  # Path to uploaded document
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -84,3 +85,16 @@ class Project(Base):
     def duration_days(self) -> int:
         """Total duration of the project in days."""
         return (self.end_date - self.start_date).days
+
+    @property
+    def time_used(self) -> int:
+        """
+        Time used in days (Elapsed time).
+        Used for Timeline calculation: (Time used * 100) / Time of project
+        """
+        today = date.today()
+        if today < self.start_date:
+            return 0
+        if today > self.end_date:
+            return self.duration_days
+        return (today - self.start_date).days

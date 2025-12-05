@@ -12,6 +12,7 @@ interface User {
     is_active: boolean;
     phone_number?: string;
     created_at?: string;
+    last_login?: string;
 }
 
 interface UserFormData {
@@ -69,12 +70,21 @@ function UserModal({ isOpen, onClose, user, onSubmit, isLoading }: UserModalProp
         }
     }, [user, isOpen]);
 
+    // Dynamic enablement logic
+    const isDepartmentRequired = ['STAFF', 'TEAM_LEAD', 'PROJECT_MANAGER'].includes(formData.role);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const data = { ...formData };
         if (isEditing && !data.password) {
             delete data.password;
         }
+
+        // Clear department if not required
+        if (!isDepartmentRequired) {
+            data.department = null;
+        }
+
         await onSubmit(data);
     };
 
@@ -190,13 +200,18 @@ function UserModal({ isOpen, onClose, user, onSubmit, isLoading }: UserModalProp
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Department
+                            <label className={`block text-sm font-medium mb-2 ${isDepartmentRequired ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
+                                Department {isDepartmentRequired && '*'}
                             </label>
                             <select
                                 value={formData.department || ''}
                                 onChange={(e) => setFormData({ ...formData, department: e.target.value || null })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+                                disabled={!isDepartmentRequired}
+                                required={isDepartmentRequired}
+                                className={`w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary ${isDepartmentRequired
+                                        ? 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'
+                                        : 'border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed bg-gray-50 dark:bg-gray-800'
+                                    }`}
                             >
                                 <option value="">None</option>
                                 <option value="DEVELOPER">Developer</option>
@@ -307,6 +322,11 @@ export default function UserManagement() {
         return role.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
     };
 
+    const formatLastLogin = (dateString?: string) => {
+        if (!dateString) return 'Never';
+        return new Date(dateString).toLocaleString();
+    };
+
     if (isLoading) {
         return <div className="flex items-center justify-center min-h-96"><div className="text-gray-600 dark:text-gray-400">Loading users...</div></div>;
     }
@@ -337,6 +357,7 @@ export default function UserManagement() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Email</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Role</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Department</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Last Login</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
                             </tr>
@@ -359,6 +380,9 @@ export default function UserManagement() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{user.department || '-'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                        {formatLastLogin(user.last_login)}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
                                             {user.is_active ? 'ACTIVE' : 'INACTIVE'}

@@ -31,16 +31,16 @@
     - [x] Verify Role-Based Access <!-- id: 25 -->
 
 ## Phase 3: Project Management (The Containers)
-- [ ] **Step 6: Projects Module** <!-- id: 26 -->
-    - [ ] Create Project Models & API <!-- id: 27 -->
-    - [ ] Create Project List & Details UI <!-- id: 28 -->
-    - [ ] Verify Project Creation & Assignment <!-- id: 29 -->
+- [x] **Step 6: Projects Module** <!-- id: 26 -->
+    - [x] Create Project Models & API <!-- id: 27 -->
+    - [x] Create Project List & Details UI <!-- id: 28 -->
+    - [x] Verify Project Creation & Assignment <!-- id: 29 -->
 
 ## Phase 4: Task Management (The Work)
-- [ ] **Step 7: Tasks Module** <!-- id: 30 -->
-    - [ ] Create Task Models & API <!-- id: 31 -->
-    - [ ] Create Task Board/List UI <!-- id: 32 -->
-    - [ ] Verify Task Updates <!-- id: 33 -->
+- [x] **Step 7: Tasks Module** <!-- id: 30 -->
+    - [x] Create Task Models & API <!-- id: 31 -->
+    - [x] Create Task Board/List UI <!-- id: 32 -->
+    - [x] Verify Task Updates <!-- id: 33 -->
 
 ## Phase 5: Dashboard & Reporting (The Report)
 - [ ] **Step 8: Dashboard Module** <!-- id: 34 -->

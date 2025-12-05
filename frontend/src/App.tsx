@@ -7,6 +7,9 @@ import UserManagement from './pages/UserManagement';
 import ProjectManagement from './pages/ProjectManagement';
 import TaskBoard from './pages/TaskBoard';
 import TasksPage from './pages/TasksPage';
+import StatusManagement from './pages/StatusManagement';
+import PriorityManagement from './pages/PriorityManagement';
+import LabelManagement from './pages/LabelManagement';
 import './App.css';
 
 // Protected Route Component
@@ -63,6 +66,30 @@ function App() {
           element={
             <ProtectedRoute>
               <TaskBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/status"
+          element={
+            <ProtectedRoute>
+              <StatusManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/priority"
+          element={
+            <ProtectedRoute>
+              <PriorityManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/labels"
+          element={
+            <ProtectedRoute>
+              <LabelManagement />
             </ProtectedRoute>
           }
         />

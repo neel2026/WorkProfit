@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, model_validator
 from typing import Literal
+from datetime import datetime
 
 # Define allowed roles as Literal type for strict validation
 UserRoleType = Literal["ADMIN", "PROJECT_MANAGER", "TEAM_LEAD", "STAFF", "CLIENT"]
@@ -72,6 +73,7 @@ class UserResponse(BaseModel):
     role: str
     department: str | None
     is_active: bool
+    last_login: datetime | None = None
     
     class Config:
         from_attributes = True

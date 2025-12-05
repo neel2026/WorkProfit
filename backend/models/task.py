@@ -34,3 +34,4 @@ class Task(Base):
     # Relationships
     project = relationship("Project", back_populates="tasks")
     assignee = relationship("User", backref="assigned_tasks")
+    labels = relationship("Label", secondary="task_labels", back_populates="tasks")

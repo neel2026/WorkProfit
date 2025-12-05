@@ -16,6 +16,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
         { path: '/users', icon: 'group', label: 'Users' },
         { path: '/activity', icon: 'history', label: 'Activity' },
         { path: '/status', icon: 'sell', label: 'Status' },
+        { path: '/priority', icon: 'flag', label: 'Priority' },
+        { path: '/labels', icon: 'label', label: 'Labels' },
     ];
 
     const isActive = (path: string) => location.pathname === path;

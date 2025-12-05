@@ -4,6 +4,7 @@ from api.v1.auth import router as auth_router
 from api.v1.users import router as users_router
 from api.v1.projects import router as projects_router
 from api.v1.tasks import router as tasks_router
+from api.v1.labels import router as labels_router
 
 app = FastAPI(title="WorkProfit API", version="1.0.0")
 
@@ -26,11 +27,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Create uploads directory if not exists
+os.makedirs("uploads", exist_ok=True)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="uploads"), name="static")
+
 # Include routers
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
+app.include_router(labels_router, prefix="/api/v1")
+from api.v1.files import router as files_router
+app.include_router(files_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():

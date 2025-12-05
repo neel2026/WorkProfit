@@ -6,6 +6,7 @@ from database import get_db
 from models.user import User, UserRole, Department
 from schemas.user import UserRegister, UserLogin, Token, UserResponse
 from core.security import hash_password, verify_password, create_access_token, decode_token
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
@@ -95,6 +96,10 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive"
         )
+    
+    # Update last_login
+    user.last_login = datetime.now()
+    await db.commit()
     
     # Create access token
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value})

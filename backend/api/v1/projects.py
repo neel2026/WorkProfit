@@ -122,10 +122,20 @@ async def list_projects(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all projects."""
+    """List all projects with team lead, client, and member details."""
     from models.task import Task  # Import here to avoid circular imports
+    from schemas.project import UserBrief
     
-    result = await db.execute(select(Project).offset(skip).limit(limit))
+    # Eager load relationships
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.team_lead),
+            selectinload(Project.client),
+            selectinload(Project.members)
+        )
+        .offset(skip).limit(limit)
+    )
     projects = result.scalars().all()
     
     # Add computed properties to each project
@@ -140,7 +150,17 @@ async def list_projects(
         response = ProjectResponse.model_validate(project)
         response.progress_percentage = project.progress_percentage
         response.duration_days = project.duration_days
+        response.time_used = project.time_used
         response.task_count = task_count
+        
+        # Add user details
+        if project.team_lead:
+            response.team_lead = UserBrief.model_validate(project.team_lead)
+        if project.client:
+            response.client = UserBrief.model_validate(project.client)
+        if project.members:
+            response.members = [UserBrief.model_validate(m) for m in project.members]
+        
         project_responses.append(response)
     
     return project_responses
@@ -151,8 +171,18 @@ async def get_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get a specific project by ID."""
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    """Get a specific project by ID with full details."""
+    from schemas.project import UserBrief
+    
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.team_lead),
+            selectinload(Project.client),
+            selectinload(Project.members)
+        )
+        .where(Project.id == project_id)
+    )
     project = result.scalar_one_or_none()
     
     if not project:
@@ -161,6 +191,15 @@ async def get_project(
     response = ProjectResponse.model_validate(project)
     response.progress_percentage = project.progress_percentage
     response.duration_days = project.duration_days
+    response.time_used = project.time_used
+    
+    # Add user details
+    if project.team_lead:
+        response.team_lead = UserBrief.model_validate(project.team_lead)
+    if project.client:
+        response.client = UserBrief.model_validate(project.client)
+    if project.members:
+        response.members = [UserBrief.model_validate(m) for m in project.members]
     
     return response
 
