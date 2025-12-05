@@ -132,8 +132,8 @@ export default function ProjectManagement() {
     };
 
     const handleEditProject = (project: Project) => {
-        if (!isAuthorized) {
-            alert('You do not have permission to edit projects.');
+        if (!canManageProject(project)) {
+            alert('You do not have permission to edit this project.');
             return;
         }
         setEditingProject(project);
@@ -320,7 +320,10 @@ export default function ProjectManagement() {
                                         <span className="text-sm text-gray-800 dark:text-gray-200">{project.task_count || 0} tasks</span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="w-full max-w-[140px]">
+                                        <div
+                                            className="w-full max-w-[140px]"
+                                            title="Progress shows time elapsed vs planned duration (calendar-based), not tasks completed."
+                                        >
                                             <div className="flex justify-between text-xs mb-1">
                                                 <span className="text-gray-500">{Math.round(project.progress_percentage || 0)}%</span>
                                                 <span className="text-gray-400">{project.time_used || 0}/{project.duration_days || 0}d</span>
@@ -441,11 +444,17 @@ export default function ProjectManagement() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client</label>
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client</label>
+                                            {user?.role === 'TEAM_LEAD' && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Admin/PM only</span>
+                                            )}
+                                        </div>
                                         <select
                                             value={formData.client_id || ''}
                                             onChange={(e) => setFormData({ ...formData, client_id: e.target.value ? Number(e.target.value) : null })}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+                                            disabled={user?.role === 'TEAM_LEAD'}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:dark:bg-gray-800 disabled:cursor-not-allowed"
                                         >
                                             <option value="">Select Client</option>
                                             {clients.map(client => (
@@ -457,11 +466,17 @@ export default function ProjectManagement() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Team Lead</label>
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Team Lead</label>
+                                            {user?.role === 'TEAM_LEAD' && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">Admin/PM only</span>
+                                            )}
+                                        </div>
                                         <select
                                             value={formData.team_lead_id || ''}
                                             onChange={(e) => setFormData({ ...formData, team_lead_id: e.target.value ? Number(e.target.value) : null })}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+                                            disabled={user?.role === 'TEAM_LEAD'}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:dark:bg-gray-800 disabled:cursor-not-allowed"
                                         >
                                             <option value="">Select Team Lead</option>
                                             {teamLeads.map(lead => (

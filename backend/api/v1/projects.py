@@ -258,6 +258,19 @@ async def update_project(
     if not can_manage_project(project, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to update this project")
 
+    # TEAM_LEAD restriction: they cannot change client or team lead assignments
+    if current_user.role == UserRole.TEAM_LEAD:
+        if project_update.team_lead_id and project_update.team_lead_id != project.team_lead_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Team Leads cannot reassign the team lead; contact an Admin or Project Manager."
+            )
+        if project_update.client_id and project_update.client_id != project.client_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Team Leads cannot change the client; contact an Admin or Project Manager."
+            )
+
     # Validate team lead role if updating
     if project_update.team_lead_id:
         await validate_team_lead(project_update.team_lead_id, db)
